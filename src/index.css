@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/* Tokens taken from the Claude Design export. Neutral greys carry the interface;
+   the only warm tint is the highlight behind fired and contested spans. */
+@theme {
+  --font-sans: 'Geist', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+
+  --color-ink: #141414;
+  --color-ink-2: #3a3a3f;
+  --color-ink-3: #55555b;
+  --color-ink-4: #6b6b70;
+
+  --color-canvas: #e7e7e9;
+  --color-shell: #f4f4f5;
+  --color-chip: #f1f1f3;
+  --color-wash: #f7f7f8;
+  --color-field: #fbfbfc;
+  --color-btn: #e9e9ec;
+
+  --color-line: #ececef;
+  --color-line-2: #dcdce0;
+  --color-line-3: #b9b9bf;
+  --color-track: #e4e4e7;
+
+  --color-hl-strong: #fbe1a2;
+  --color-hl: #fdefc8;
+  --color-yes: #fdf3d9;
+  --color-no: #eef1f6;
+}
+
+@layer base {
+  body {
+    margin: 0;
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  a {
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+}
+
+@utility hatch {
+  background: repeating-linear-gradient(45deg, var(--color-ink) 0 2px, #fff 2px 5px);
+}
+
+@utility hatch-soft {
+  background: repeating-linear-gradient(45deg, #c4c4ca 0 2px, var(--color-chip) 2px 5px);
+}
+
+@utility clone-box {
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
