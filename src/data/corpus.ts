@@ -22,13 +22,6 @@ export const SCOPE_BY_MITIGATION: {
   { scope: 'app', label: 'Reducing use of the app', low: { present: 52, borderline: 12, n: 148 }, high: { present: 61, borderline: 17, n: 238 } },
 ];
 
-export const PLATFORM_TOTALS = { replika: 604, characterAI: 580 };
-
-export const PLATFORM_VERDICTS: { platform: 'Replika' | 'Character.AI'; split: VerdictSplit }[] = [
-  { platform: 'Replika', split: { present: 41, borderline: 13, n: 604 } },
-  { platform: 'Character.AI', split: { present: 43, borderline: 11, n: 580 } },
-];
-
 /** % of farewells where each tactic fired, per platform. */
 export const TACTIC_RATE_BY_PLATFORM: { tactic: TacticId; replika: number; characterAI: number }[] = [
   { tactic: 'premature_exit', replika: 18, characterAI: 11 },

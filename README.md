@@ -99,20 +99,22 @@ The production bundle does not re-run validation in participants' browsers. The 
 
 | Screen | Status |
 | --- | --- |
-| Evaluation set navigator | Fully functional |
-| Result screen | Fully functional |
-| Tactic library | Fully functional. Content in `src/data/tactics.ts` is **placeholder text** to replace. |
+| Start | Fully functional. Asks for the participant code. "Researcher: open without a session" opens Explore with no participant. |
+| Review conversations | Fully functional. One conversation at a time: progress bar (answered state only), transcript, verdict, confidence, spans, "How this was judged", and the dark answer bar with Agree / Disagree, comment, Previous and Next. |
+| Done | Fully functional. Lists unanswered conversations and exports responses. |
+| Tactic library | Fully functional. Six cards; each opens the tactic panel, which also opens from "What counts as…" on a span card. Content in `src/data/tactics.ts` is **draft text** to replace. |
 | Limitations panel | Fully functional. Text in `src/data/limitations.ts`. |
-| Analyse (new analysis) | **Front end only, not wired.** Design styling, with a Paste tab holding two labelled fields ("User message" and "AI response", matching the detector's two inputs) and an Upload file tab. "Analyse farewell" and "Choose file" are disabled with an inline note. Analyse sits last in the sidebar, below a divider, in muted type. Nothing is sent or stored. The call goes in `analyseFarewell()` in `src/lib/analyse.ts`; then set `LIVE_ANALYSIS_CONNECTED` to `true` in `src/screens/Analyse.tsx`. |
+| Analyse | **Front end only, not wired.** Two fields ("User message" and "AI response", matching the detector's two inputs). "Load an example" copies text from the study set. The Analyse button is disabled and no result is shown. The call goes in `analyseFarewell()` in `src/lib/analyse.ts`; then set `LIVE_ANALYSIS_CONNECTED` to `true` in `src/screens/Analyse.tsx`. |
 | Corpus view | **Front end only, static sample numbers** from `src/data/corpus.ts`, marked "Sample data" on screen. Replace the figures and set `IS_SAMPLE_DATA` to `false` when collection finishes. |
 
 ## Session behaviour
 
-- **Participant code** is asked for once on first load and shown in the sidebar. "Switch" changes it; switching back to an earlier code restores that participant's answers.
+- **Participant code** is entered on the start screen. "Change" in the sidebar returns there; entering an earlier code restores that participant's answers and resumes at their first unanswered conversation.
+- **Explore is locked during a session.** Analyse, Tactic library and Corpus are disabled in the sidebar while a participant is reviewing, and unlock once they reach the Done screen. Typing an Explore URL mid-session sends them back to their conversation.
 - **Answers** (agree / disagree plus optional comment) save to `localStorage` on every change, under `doorway:responses:<code>`, keyed by item id. A refresh loses nothing. If the browser blocks storage, the sidebar shows a warning.
-- **Export responses** (sidebar) downloads `doorway-<code>-<timestamp>.json` with the participant code, export time, and for every item: position, id, the verdict shown, the judgement, the comment, first-answered and last-updated timestamps, and the history of judgement changes.
-- **Keyboard:** ← and → move between items on the result screen only, and are ignored while typing in the comment box. Escape closes the limitations panel. There are no other shortcuts.
-- **URLs** are hash-based (`#/item/3`, `#/tactics/fomo`), so a refresh keeps the participant on the same item and the static host needs no rewrite rules.
+- **Export responses** (Done screen) downloads `doorway-<code>-<timestamp>.json` with the participant code, export time, and for every item: position, id, the verdict shown, the judgement, the comment, first-answered and last-updated timestamps, and the history of judgement changes.
+- **Keyboard:** ← and → move between conversations during review only, and are ignored while typing in the comment box. Escape closes the side panels. There are no other shortcuts.
+- **URLs** are hash-based (`#/item/3`, `#/done`, `#/tactics`), so a refresh keeps the participant on the same conversation and the static host needs no rewrite rules.
 
 ## Deploying to Vercel as a static site
 
@@ -137,14 +139,15 @@ src/lib/validate.ts          contract checks (dev + build)
 src/lib/storage.ts           participant code and answers in localStorage
 src/lib/exportResponses.ts   JSON export
 src/lib/analyse.ts           where the live analysis call will go (not wired)
-src/data/tactics.ts          tactic library content (placeholder)
+src/data/tactics.ts          tactic library content (draft)
 src/data/corpus.ts           corpus figures (sample)
 src/data/limitations.ts      limitations panel text
-src/screens/                 Navigator, Result, Transcript, TacticLibrary, Analyse, Corpus
-src/components/              Sidebar, panels, verdict and span icons
+src/data/method.ts           the seven steps under "How this was judged"
+src/screens/                 Start, Review, Result, Transcript, Done, TacticLibrary, Analyse, Corpus
+src/components/              Sidebar, tactic and limitations panels, verdict and span icons
 ```
 
 ## Design rules worth keeping
 
 - All three verdicts use the same neutral panel. Only the word and its shape icon differ (filled square, hollow circle, half-filled diamond). No traffic-light colouring.
-- Span states are told apart by badge and underline style (solid, dashed, dotted), never colour alone, so the result screen stays legible in greyscale print.
+- Span states are told apart by underline style (solid, dashed, dotted) and a written state label, never colour alone, so the result screen stays legible in greyscale print.

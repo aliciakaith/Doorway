@@ -44,6 +44,15 @@ export function saveParticipant(code: string): void {
   }
 }
 
+/** "Researcher: open without a session". Answers stay stored under their code. */
+export function clearParticipant(): void {
+  try {
+    localStorage.removeItem(PARTICIPANT_KEY);
+  } catch {
+    // nothing to clear if storage is blocked
+  }
+}
+
 export function loadResponses(code: string): ResponseMap {
   try {
     const raw = localStorage.getItem(responsesKey(code));

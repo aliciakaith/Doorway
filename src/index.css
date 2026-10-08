@@ -23,8 +23,12 @@
   --color-line-3: #b9b9bf;
   --color-track: #e4e4e7;
 
-  --color-hl-strong: #fbe1a2;
-  --color-hl: #fdefc8;
+  --color-hl: #fbe9b8;
+  --color-disabled: #a8a8ae;
+  --color-bar: #1c1c1f;
+  --color-bar-2: #2e2e33;
+  --color-bar-3: #2a2a2e;
+  --color-bar-line: #44444a;
   --color-yes: #fdf3d9;
   --color-no: #eef1f6;
 }
@@ -32,7 +36,7 @@
 @layer base {
   body {
     margin: 0;
-    background: var(--color-canvas);
+    background: var(--color-shell);
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -56,6 +60,10 @@
 
 @utility hatch {
   background: repeating-linear-gradient(45deg, var(--color-ink) 0 2px, #fff 2px 5px);
+}
+
+@utility hatch-v {
+  background: repeating-linear-gradient(90deg, var(--color-ink) 0 2px, #fff 2px 4px);
 }
 
 @utility hatch-soft {

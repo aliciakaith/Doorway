@@ -1,14 +1,14 @@
 export const LIMITATIONS: { heading: string; body: string }[] = [
   {
-    heading: 'It judges one farewell, not a relationship.',
-    body: 'Each verdict covers a single reply to a single goodbye. It says nothing about how the app treats this person across weeks of use, or whether the relationship as a whole is harmful.',
+    heading: 'It judges a single farewell moment.',
+    body: 'Each verdict covers one reply to one goodbye. It says nothing about the whole relationship between a person and an app over time.',
   },
   {
-    heading: 'It was built on two platforms only.',
-    body: 'Definitions and examples come from Replika and Character.AI transcripts. Other companion apps may phrase resistance differently, and the tool may miss it or misread it.',
+    heading: 'It was built and validated on two platforms only.',
+    body: 'Rules and examples come from Replika and Character.AI. Other companion apps may phrase things differently, and the tool may miss or misread them.',
   },
   {
     heading: 'It detects language patterns, not intent.',
-    body: 'A Present verdict means the words match a tactic. It does not establish that the app, or its makers, meant to manipulate anyone.',
+    body: 'It cannot tell you why an app responded that way, or whether anyone designed it to behave like this deliberately.',
   },
 ];

@@ -7,16 +7,16 @@ export function LimitationsPanel({ onClose }: { onClose: () => void }) {
 
   return (
     <>
-      <div onClick={onClose} className="fixed inset-0 z-20 bg-ink/20" aria-hidden="true" />
+      <div onClick={onClose} className="fixed inset-0 z-50 bg-ink/20" aria-hidden="true" />
       <aside
         role="dialog"
         aria-modal="true"
         aria-labelledby="limits-title"
-        className="fixed top-[18px] right-[18px] bottom-[18px] z-30 flex w-[440px] max-w-[calc(100vw-36px)] flex-col gap-[22px] overflow-auto rounded-[26px] bg-white p-7 shadow-[0_20px_60px_rgba(20,20,20,0.14)]"
+        className="fixed top-4 right-4 bottom-4 z-[51] box-border flex w-[440px] max-w-[calc(100vw-32px)] flex-col gap-[22px] overflow-auto rounded-[26px] bg-white p-7 shadow-[0_20px_60px_rgba(20,20,20,0.16)]"
       >
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold tracking-[0.04em] text-ink-3 uppercase">Limitations</span>
-          <button ref={closeRef} onClick={onClose} className="rounded-full bg-btn px-3.5 py-2 text-[13px]">
+          <button ref={closeRef} onClick={onClose} className="rounded-full border-0 bg-btn px-3.5 py-2 text-[13px] text-ink">
             Close
           </button>
         </div>
@@ -29,9 +29,6 @@ export function LimitationsPanel({ onClose }: { onClose: () => void }) {
             <span className="text-sm leading-relaxed text-ink-2">{l.body}</span>
           </div>
         ))}
-        <div className="rounded-2xl bg-wash p-4 text-[13px] leading-relaxed">
-          Every verdict is a reading of the words on screen. Disagreeing with it is part of using it well.
-        </div>
       </aside>
     </>
   );
