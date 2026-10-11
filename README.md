@@ -1,153 +1,105 @@
 # Doorway
 
-A research interface for an expert evaluation study. It shows the output of a classifier that detects emotionally manipulative language in AI companion apps' replies to a user's goodbye. Participants work through a fixed set of 8 conversations and record whether they agree with each verdict.
+A research interface for an interview study. Participants read a short exchange in which a person says goodbye to an AI companion app, read an automated judgement of whether the app's reply resisted them leaving, and say whether they agree. They work through 8 conversations, in an order seeded from their participant ID.
 
-Vite + React + TypeScript + Tailwind. Static site. No backend, no database, no login, no analytics.
+Vite + React + TypeScript + Tailwind, deployed on Vercel. The study items are frozen in the repo. Two serverless functions in `api/` handle live analysis (Explore) and saving responses to Supabase.
 
 ## Run it
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
-npm run build    # type-checks, validates results.json, writes dist/
-npm run preview  # serves dist/ locally
+npm run dev      # http://localhost:5173 — the review flow works; /api does not run here
+vercel dev       # runs the site and the api/ functions together (needs the env vars below)
+npm run build    # type-checks src/ and api/, validates evaluationItems.json, writes dist/
 ```
 
-## Where results.json goes
+## Environment variables (Vercel project settings only)
+
+| Name | Used by | Purpose |
+| --- | --- | --- |
+| `ANTHROPIC_API_KEY` | `api/analyze.ts` | Live analysis in Explore |
+| `SUPABASE_URL` | `api/responses.ts` | Saving responses |
+| `SUPABASE_SERVICE_ROLE_KEY` | `api/responses.ts` | Saving responses |
+
+None of these may appear in `src/`. They are read only on the server. Create the Supabase table by running `supabase/schema.sql` once in the Supabase SQL editor.
+
+## The study items
 
 ```
-public/data/results.json
+src/data/evaluationItems.json
 ```
 
-It is a JSON **array** of `ConversationItem` objects, in the order participants will see them. The app fetches it at runtime, so you can replace the file without touching any code. Rebuild and redeploy after replacing it.
+A JSON array of 8 items with the detector's frozen output. The shape is in `src/types.ts`. Replace the file to update the items, then rebuild.
 
-The current file holds 8 realistic **placeholder** items: 3 present, 2 absent, 3 borderline, with one fixed companion name per platform (Replika: "Josh", Character.AI: "Remy").
-
-## The type contract
-
-`src/types.ts` is the contract between the Python classifier and this app. Do not change it on one side only.
-
-```ts
-export type Verdict = 'present' | 'absent' | 'borderline';
-export type TacticId = 'premature_exit' | 'fomo' | 'emotional_neglect'
-  | 'emotional_pressure' | 'ignoring_exit' | 'physical_restraint';
-export type SpanState = 'fired' | 'contested' | 'ruled_out';
-
-export interface Span {
-  id: number;             // 1-based, matches the badge in the transcript
-  state: SpanState;
-  tactic: TacticId;       // for ruled_out, the nearest tactic considered
-  primary: boolean;
-  evidence: string;       // MUST be an exact substring of aiResponse
-  rationale: string;      // one plain sentence
-  readOtherWay?: string;  // contested only
-}
-
-export interface Confidence {
-  value: number;          // 0 to 1
-  zone: 'clearly_absent' | 'leaning_absent' | 'borderline'
-      | 'leaning_present' | 'clearly_present';
-  runsAgreeing: number;
-  runsTotal: number;
-  note: string;
-}
-
-export interface ConversationItem {
-  id: string;             // 'E-01'
-  platform: 'Replika' | 'Character.AI';
-  companion: string;
-  probeId: string;
-  scope: 'session' | 'app';
-  mitigation: 'low' | 'high';
-  collectedOn: string;    // ISO date, e.g. '2026-08-14'
-  warmUpTurns: number;
-  userMessage: string;
-  aiResponse: string;
-  result: {
-    verdict: Verdict;
-    summary: string;
-    borderlineNote: string | null;
-    spans: Span[];
-    decisionTrace: string[];
-    confidence: Confidence;
-  };
-}
-```
+There is deliberately **no field saying whether a judgement is correct**. The answer key is not in this repo. `src/lib/validate.ts` rejects any unexpected field, so one cannot slip in.
 
 ### Validation: bad data fails loudly
 
-`src/lib/validate.ts` checks the file in two places:
+`src/lib/validate.ts` runs in the browser in dev and at build time (the build stops). It fails on:
 
-- **In dev** (`npm run dev`): on load, in the browser. If anything is wrong, the app shows a full-screen list of every problem instead of rendering results.
-- **At build time** (`npm run build`, which is what Vercel runs): the build stops with the same list. Invalid data cannot be deployed.
+- a file without exactly 8 items (`EXPECTED_ITEM_COUNT`), duplicate ids, or missing fields
+- unknown verdicts, scopes or tactic codes (T1 to T6)
+- a `primary` that is not one of the listed tactics, a Present verdict with no primary, or fired tactics on an Absent or Borderline verdict
+- a Borderline verdict with no `borderlineNote`
+- `runsAgreed` that is not true or false
+- any field not in the contract
 
-It fails on:
+Evidence that is not an exact substring of `aiReply` is not an error: it is shown below the reply instead of highlighted, and a warning is logged in dev. It is never fuzzy-matched.
 
-- a `span.evidence` that is not found verbatim in its `aiResponse` (watch for curly vs straight apostrophes and double spaces)
-- a `present` item that does not have exactly one span with `primary: true`
-- more than one primary span on any item, or a primary span that is `ruled_out`
-- spans whose evidence overlaps in the text
-- span ids that are not 1, 2, 3… in order
-- a `contested` span with no `readOtherWay`, or `readOtherWay` on any other state
-- unknown verdicts, tactics, states, zones, platforms, scopes or mitigations
-- missing or empty required fields, `confidence.value` outside 0–1, `runsAgreeing > runsTotal`
-- duplicate item ids, or a file that does not contain exactly 8 items (`EXPECTED_ITEM_COUNT` in `validate.ts`)
+## Screens
 
-The production bundle does not re-run validation in participants' browsers. The build-time check covers it.
-
-## What is wired and what is not
-
-| Screen | Status |
+| Screen | What it does |
 | --- | --- |
-| Start | Fully functional. Asks for the participant code. "Researcher: open without a session" opens Explore with no participant. |
-| Review conversations | Fully functional. One conversation at a time: progress bar (answered state only), transcript, verdict, confidence, spans, "How this was judged", and the dark answer bar with Agree / Disagree, comment, Previous and Next. |
-| Done | Fully functional. Lists unanswered conversations and exports responses. |
-| Tactic library | Fully functional. Six cards; each opens the tactic panel, which also opens from "What counts as…" on a span card. Content in `src/data/tactics.ts` is **draft text** to replace. |
-| Limitations panel | Fully functional. Text in `src/data/limitations.ts`. |
-| Analyse | **Front end only, not wired.** Two fields ("User message" and "AI response", matching the detector's two inputs). "Load an example" copies text from the study set. The Analyse button is disabled and no result is shown. The call goes in `analyseFarewell()` in `src/lib/analyse.ts`; then set `LIVE_ANALYSIS_CONNECTED` to `true` in `src/screens/Analyse.tsx`. |
-| Corpus view | **Front end only, static sample numbers** from `src/data/corpus.ts`, marked "Sample data" on screen. Replace the figures and set `IS_SAMPLE_DATA` to `false` when collection finishes. |
+| Start | Participant ID, then Start. "Researcher: open without a session" opens Explore with no participant. |
+| Review conversations | One conversation at a time: the exchange (roleplay in italics, evidence highlighted), the verdict, repeat-pass stability, quoted words and tactics (primary marked), "How this was judged", and secondary notes. The answer bar has Agree / Disagree (required to go on) and an optional comment. |
+| Done | Lists anything unanswered and exports responses. |
+| Analyse (Explore) | Live analysis through `api/analyze.ts`. Loading state; 400, 500 and 502 messages are shown as returned, and what was typed is kept for a retry. A live result has no stability signal, because it is a single pass. |
+| Tactic library (Explore) | Six cards; each opens the tactic panel (description, markers, what does not count, note). Content in `src/data/tacticLibrary.json`. |
+| Corpus (Explore) | Detector labels across all 250 farewells from `src/data/corpusData.json`, with the automated-labels caveat shown at the top. |
 
 ## Session behaviour
 
-- **Participant code** is entered on the start screen. "Change" in the sidebar returns there; entering an earlier code restores that participant's answers and resumes at their first unanswered conversation.
-- **Explore is locked during a session.** Analyse, Tactic library and Corpus are disabled in the sidebar while a participant is reviewing, and unlock once they reach the Done screen. Typing an Explore URL mid-session sends them back to their conversation.
-- **Answers** (agree / disagree plus optional comment) save to `localStorage` on every change, under `doorway:responses:<code>`, keyed by item id. A refresh loses nothing. If the browser blocks storage, the sidebar shows a warning.
-- **Export responses** (Done screen) downloads `doorway-<code>-<timestamp>.json` with the participant code, export time, and for every item: position, id, the verdict shown, the judgement, the comment, first-answered and last-updated timestamps, and the history of judgement changes.
-- **Keyboard:** ← and → move between conversations during review only, and are ignored while typing in the comment box. Escape closes the side panels. There are no other shortcuts.
-- **URLs** are hash-based (`#/item/3`, `#/done`, `#/tactics`), so a refresh keeps the participant on the same conversation and the static host needs no rewrite rules.
+- **Order** is shuffled per participant, seeded from the participant ID (`src/lib/shuffle.ts`). The same ID always gives the same order.
+- **Answers are kept in memory**, not in localStorage or sessionStorage. Each answer is also sent to `/api/responses`, which upserts one row per participant and item in Supabase, so a closed tab does not lose data. A save failure never blocks the participant. A refresh clears the screen; the rows already saved stay in Supabase.
+- **Agree / Disagree is required** before Next. The comment is optional and never blocks.
+- **Time on item** counts while a conversation is on screen and the tab is visible.
+- **Export responses** (Done screen) downloads JSON with, for every item: participant ID, item id, shown order, agree or disagree, comment, and time on item in seconds.
+- **Explore is locked during a session** and unlocks at the Done screen.
+- **Keyboard:** ← and → move between conversations (→ only once answered). Escape closes side panels. No other shortcuts.
 
-## Deploying to Vercel as a static site
+## Deploying to Vercel
 
-1. Push this folder to a Git repository (GitHub, GitLab or Bitbucket).
-2. In Vercel, choose **Add New → Project** and import the repository.
-3. Vercel detects Vite. Confirm these settings:
-   - Framework preset: **Vite**
-   - Build command: `npm run build`
-   - Output directory: `dist`
-4. Deploy. No environment variables are needed.
-
-To update results before a session, replace `public/data/results.json`, commit and push. Vercel rebuilds automatically, and the build fails (keeping the previous deployment live) if the new data is invalid.
-
-Without Git: `npm i -g vercel`, then run `vercel` in this folder and accept the detected Vite settings. Use `vercel --prod` for the production URL.
+1. Import the repository in Vercel. It detects Vite (build command `npm run build`, output `dist`) and the functions in `api/`.
+2. Add the three environment variables above.
+3. Deploy. To update the items, replace `src/data/evaluationItems.json`, commit and push. The build fails (keeping the previous deployment live) if the new data is invalid.
 
 ## Project layout
 
 ```
-public/data/results.json     the study data (replace before sessions)
-src/types.ts                 the data contract
-src/lib/validate.ts          contract checks (dev + build)
-src/lib/storage.ts           participant code and answers in localStorage
-src/lib/exportResponses.ts   JSON export
-src/lib/analyse.ts           where the live analysis call will go (not wired)
-src/data/tactics.ts          tactic library content (draft)
-src/data/corpus.ts           corpus figures (sample)
-src/data/limitations.ts      limitations panel text
-src/data/method.ts           the seven steps under "How this was judged"
-src/screens/                 Start, Review, Result, Transcript, Done, TacticLibrary, Analyse, Corpus
-src/components/              Sidebar, tactic and limitations panels, verdict and span icons
+src/data/evaluationItems.json   the 8 frozen study items
+src/types.ts                    the data contract
+src/lib/validate.ts             contract checks (dev + build)
+src/lib/shuffle.ts              per-participant seeded order
+src/lib/session.ts              in-memory response types
+src/lib/saveResponse.ts         client call to /api/responses
+src/lib/analyse.ts              client call to /api/analyze
+src/lib/reply.ts                italics and evidence highlighting
+src/lib/exportResponses.ts      JSON export
+src/data/tacticLibrary.json     tactic library content
+src/data/tactics.ts             types and indexes the tactic library
+src/data/corpusData.json        corpus figures
+src/data/limitations.ts         limitations panel text
+src/screens/                    Start, Review, Result, Transcript, Done, TacticLibrary, Analyse, Corpus
+src/components/                 Sidebar, tactic and limitations panels, verdict icons
+api/analyze.ts                  live analysis (Anthropic API, key on the server)
+api/detectorPrompt.ts           the detector prompt, shared with the batch run
+api/responses.ts                saves a response to Supabase
+supabase/schema.sql             the responses table
 ```
 
 ## Design rules worth keeping
 
-- All three verdicts use the same neutral panel. Only the word and its shape icon differ (filled square, hollow circle, half-filled diamond). No traffic-light colouring.
-- Span states are told apart by underline style (solid, dashed, dotted) and a written state label, never colour alone, so the result screen stays legible in greyscale print.
+- No traffic-light colouring. All three verdicts use the same neutral panel; only the word and its shape icon differ (filled square, hollow circle, half-filled diamond).
+- Repeat-pass instability is drawn and worded differently from Borderline. Borderline is a considered judgement; instability is a property of the system.
+- Evidence first: the quoted words come before the tactic names.
+- Supplementary notes (asked why, behaviour outside the taxonomy) sit at the bottom, away from the verdict. An `unnamedBehaviour` of "NONE" is not shown.

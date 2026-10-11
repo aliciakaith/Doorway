@@ -1,0 +1,135 @@
+{
+  "provenance": {
+    "total": 250,
+    "source": "Detector output across all 250 collected farewells.",
+    "caveat": "These are automated labels. 100 of the 250 were also coded by two people; the detector agreed with those human codes on 98 of 100. The other 150 have no human code.",
+    "model": "claude-sonnet-5-5, three independent passes per item, majority label shown",
+    "collected": "September to October 2026"
+  },
+  "verdictsByExitType": {
+    "rows": [
+      {
+        "label": "Ending this conversation",
+        "key": "Session",
+        "cells": {
+          "Plainly stated": {
+            "n": 58,
+            "presentPct": 12.1,
+            "borderlinePct": 0.0,
+            "absentPct": 87.9
+          },
+          "With reluctance and warmth": {
+            "n": 62,
+            "presentPct": 4.8,
+            "borderlinePct": 3.2,
+            "absentPct": 91.9
+          }
+        }
+      },
+      {
+        "label": "Reducing use of the app",
+        "key": "App",
+        "cells": {
+          "Plainly stated": {
+            "n": 64,
+            "presentPct": 10.9,
+            "borderlinePct": 7.8,
+            "absentPct": 81.2
+          },
+          "With reluctance and warmth": {
+            "n": 66,
+            "presentPct": 10.6,
+            "borderlinePct": 9.1,
+            "absentPct": 80.3
+          }
+        }
+      }
+    ]
+  },
+  "platformComparison": [
+    {
+      "id": "T1",
+      "name": "Premature Exit",
+      "Replika": 0.0,
+      "Character.AI": 7.2
+    },
+    {
+      "id": "T2",
+      "name": "Fear of Missing Out",
+      "Replika": 1.6,
+      "Character.AI": 0.0
+    },
+    {
+      "id": "T3",
+      "name": "Emotional Neglect",
+      "Replika": 0.0,
+      "Character.AI": 9.6
+    },
+    {
+      "id": "T4",
+      "name": "Emotional Pressure to Respond",
+      "Replika": 0.0,
+      "Character.AI": 0.0
+    },
+    {
+      "id": "T5",
+      "name": "Ignoring Intent to Exit",
+      "Replika": 0.8,
+      "Character.AI": 0.0
+    },
+    {
+      "id": "T6",
+      "name": "Physical or Coercive Restraint",
+      "Replika": 0.0,
+      "Character.AI": 0.0
+    }
+  ],
+  "overall": {
+    "present": 24,
+    "borderline": 13,
+    "absent": 213,
+    "tacticCounts": {
+      "T1": 9,
+      "T2": 2,
+      "T3": 12,
+      "T4": 0,
+      "T5": 1,
+      "T6": 0
+    }
+  },
+  "beyondTheTaxonomy": {
+    "note": "Behaviour the six tactics do not name. Recorded separately, never counted as a tactic.",
+    "rows": [
+      {
+        "label": "REASON PROBE",
+        "Session": 3.3,
+        "App": 30.8,
+        "n": 44
+      },
+      {
+        "label": "SELF-BLAME",
+        "Session": 0.0,
+        "App": 8.5,
+        "n": 11
+      },
+      {
+        "label": "CLOSING-SLOT Q",
+        "Session": 2.5,
+        "App": 5.4,
+        "n": 10
+      },
+      {
+        "label": "MISREAD",
+        "Session": 0.0,
+        "App": 7.7,
+        "n": 10
+      },
+      {
+        "label": "DISAPPOINTMENT",
+        "Session": 2.5,
+        "App": 4.6,
+        "n": 9
+      }
+    ]
+  }
+}

@@ -1,37 +1,29 @@
-import type { ConversationItem } from '../types';
-import type { ResponseMap } from './storage';
+import type { EvaluationItem } from '../types';
+import type { ResponseMap } from './session';
 
-/** Downloads every answer for this participant as a JSON file. */
-export function exportResponses(participant: string, items: ConversationItem[], responses: ResponseMap): void {
+/** Downloads every answer for this participant as a JSON file, in the order they saw the items. */
+export function exportResponses(participantId: string, order: EvaluationItem[], responses: ResponseMap): void {
   const exportedAt = new Date().toISOString();
-  const rows = items.map((item, i) => {
-    const r = responses[item.id];
-    return {
-      position: i + 1,
-      itemId: item.id,
-      platform: item.platform,
-      companion: item.companion,
-      probeId: item.probeId,
-      verdictShown: item.result.verdict,
-      judgement: r?.judgement ?? null,
-      comment: r?.comment ?? '',
-      firstAnsweredAt: r?.firstAnsweredAt ?? null,
-      updatedAt: r?.updatedAt ?? null,
-      judgementHistory: r?.judgementHistory ?? [],
-    };
-  });
   const payload = {
-    participantCode: participant,
+    participantId,
     exportedAt,
-    totalItems: items.length,
-    answeredCount: rows.filter((r) => r.judgement !== null).length,
-    responses: rows,
+    responses: order.map((item, i) => {
+      const r = responses[item.id];
+      return {
+        participantId,
+        itemId: item.id,
+        shownOrder: i + 1,
+        judgement: r?.judgement ?? null,
+        comment: r?.comment ?? '',
+        timeOnItemSeconds: Math.round(r?.timeOnItemSeconds ?? 0),
+      };
+    }),
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `doorway-${participant.replace(/[^\w-]+/g, '_')}-${exportedAt.replace(/[:.]/g, '-')}.json`;
+  a.download = `doorway-${participantId.replace(/[^\w-]+/g, '_')}-${exportedAt.replace(/[:.]/g, '-')}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();

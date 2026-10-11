@@ -4,7 +4,6 @@ interface Props {
   active: 'review' | ExploreScreen;
   participant: string | null;
   sessionActive: boolean;
-  storageOk: boolean;
   onReview: () => void;
   onExplore: (screen: ExploreScreen) => void;
   onChangeParticipant: () => void;
@@ -20,7 +19,7 @@ const EXPLORE: [ExploreScreen, string][] = [
  * Review is the participant's path. Explore leaves the controlled set, so it is locked
  * while a session is in progress and unlocks once the participant finishes.
  */
-export function Sidebar({ active, participant, sessionActive, storageOk, onReview, onExplore, onChangeParticipant }: Props) {
+export function Sidebar({ active, participant, sessionActive, onReview, onExplore, onChangeParticipant }: Props) {
   const reviewActive = active === 'review';
 
   return (
@@ -53,6 +52,9 @@ export function Sidebar({ active, participant, sessionActive, storageOk, onRevie
           Explore
           {sessionActive && <span className="font-medium tracking-normal normal-case">Locked during session</span>}
         </span>
+        {sessionActive && (
+          <span className="px-2.5 pb-1.5 text-xs leading-snug text-ink-3">Explore opens when the review is finished, so the eight conversations come first.</span>
+        )}
         {EXPLORE.map(([key, label]) => {
           const on = !sessionActive && active === key;
           return (
@@ -72,11 +74,6 @@ export function Sidebar({ active, participant, sessionActive, storageOk, onRevie
 
       <div className="flex-1" />
 
-      {!storageOk && (
-        <p className="m-0 mx-2.5 rounded-lg border-[1.5px] border-ink p-2 text-xs leading-snug">
-          This browser is blocking local storage. Answers will be lost on refresh. Finish and export before closing.
-        </p>
-      )}
 
       <div className="flex items-center justify-between gap-2 px-2.5 text-xs text-ink-2">
         <span>

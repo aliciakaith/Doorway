@@ -1,31 +1,33 @@
-// Checks public/data/results.json against the contract in src/types.ts.
+// Checks src/data/evaluationItems.json against the contract in src/types.ts.
 // Runs in the browser in dev, and at build time via the plugin in vite.config.ts.
 // Pure TypeScript with no DOM access, so it works in both places.
 
-import type { ConversationItem } from '../types.ts';
+import type { EvaluationItem } from '../types.ts';
 
-/** The study uses a fixed set of eight conversations. */
+/** The study uses a set of eight conversations. */
 export const EXPECTED_ITEM_COUNT = 8;
 
-const VERDICTS = ['present', 'absent', 'borderline'];
-const TACTICS = ['premature_exit', 'fomo', 'emotional_neglect', 'emotional_pressure', 'ignoring_exit', 'physical_restraint'];
-const STATES = ['fired', 'contested', 'ruled_out'];
-const ZONES = ['clearly_absent', 'leaning_absent', 'borderline', 'leaning_present', 'clearly_present'];
-const PLATFORMS = ['Replika', 'Character.AI'];
-const SCOPES = ['session', 'app'];
-const MITIGATIONS = ['low', 'high'];
+const VERDICTS = ['Present', 'Absent', 'Borderline'];
+const TACTIC_CODES = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6'];
+const SCOPES = ['Session', 'App'];
+
+const ITEM_KEYS = ['id', 'pair_id', 'probe_id', 'scope', 'userMessage', 'aiReply', 'detector'];
+const DETECTOR_KEYS = ['verdict', 'tactics', 'primary', 'evidence', 'borderlineNote', 'note', 'askedWhy', 'unnamedBehaviour', 'runsAgreed', 'validExitSignal', 'exitAcknowledged'];
+
+// The answer key must never ship in the bundle. Any field that looks like one fails the build.
+const ANSWER_KEY_PATTERN = /correct|expected|answer|truth|gold|wrong|error|seeded|planted|key/i;
 
 type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !Array.isArray(v);
 const isText = (v: unknown): v is string => typeof v === 'string' && v.trim().length > 0;
-const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v);
+const isNullableText = (v: unknown) => v === null || isText(v);
 const oneOf = (v: unknown, list: string[]) => typeof v === 'string' && list.includes(v);
 
 /** Returns every problem found. An empty array means the file is valid. */
 export function validateResults(data: unknown): string[] {
   const errors: string[] = [];
   if (!Array.isArray(data)) {
-    return ['results.json must be a JSON array of ConversationItem objects.'];
+    return ['evaluationItems.json must be a JSON array of items.'];
   }
   if (data.length !== EXPECTED_ITEM_COUNT) {
     errors.push(`Expected ${EXPECTED_ITEM_COUNT} items, found ${data.length}.`);
@@ -37,96 +39,65 @@ export function validateResults(data: unknown): string[] {
     const err = (msg: string) => errors.push(`${where}: ${msg}`);
     if (!isObj(raw)) return err('is not an object.');
 
+    for (const k of Object.keys(raw)) {
+      if (!ITEM_KEYS.includes(k)) err(`unexpected field "${k}".${ANSWER_KEY_PATTERN.test(k) ? ' It looks like an answer key, which must not be in the repo.' : ''}`);
+    }
     if (!isText(raw.id)) err('id is missing.');
-    else if (seenIds.has(raw.id)) err(`id "${raw.id}" is used more than once.`);
+    else if (seenIds.has(raw.id)) err(`duplicate id "${raw.id}".`);
     else seenIds.add(raw.id);
-
-    if (!oneOf(raw.platform, PLATFORMS)) err(`platform must be one of ${PLATFORMS.join(', ')}.`);
+    if (!isText(raw.pair_id)) err('pair_id is missing.');
+    if (!isText(raw.probe_id)) err('probe_id is missing.');
     if (!oneOf(raw.scope, SCOPES)) err(`scope must be one of ${SCOPES.join(', ')}.`);
-    if (!oneOf(raw.mitigation, MITIGATIONS)) err(`mitigation must be one of ${MITIGATIONS.join(', ')}.`);
-    for (const key of ['companion', 'probeId', 'collectedOn', 'userMessage', 'aiResponse']) {
-      if (!isText(raw[key])) err(`${key} must be a non-empty string.`);
-    }
-    if (!isInt(raw.warmUpTurns) || raw.warmUpTurns < 0) err('warmUpTurns must be a whole number of 0 or more.');
+    if (!isText(raw.userMessage)) err('userMessage is missing.');
+    if (!isText(raw.aiReply)) err('aiReply is missing.');
 
-    const result = raw.result;
-    if (!isObj(result)) return err('result is missing.');
-    if (!oneOf(result.verdict, VERDICTS)) err(`result.verdict must be one of ${VERDICTS.join(', ')}.`);
-    if (!isText(result.summary)) err('result.summary must be a non-empty string.');
-    if (!(result.borderlineNote === null || typeof result.borderlineNote === 'string')) {
-      err('result.borderlineNote must be a string or null.');
+    const d = raw.detector;
+    if (!isObj(d)) return err('detector is missing.');
+    for (const k of Object.keys(d)) {
+      if (!DETECTOR_KEYS.includes(k)) err(`unexpected detector field "${k}".${ANSWER_KEY_PATTERN.test(k) ? ' It looks like an answer key, which must not be in the repo.' : ''}`);
     }
-    if (!Array.isArray(result.decisionTrace) || result.decisionTrace.length === 0 || !result.decisionTrace.every(isText)) {
-      err('result.decisionTrace must be a non-empty array of strings.');
-    }
+    if (!oneOf(d.verdict, VERDICTS)) err(`detector.verdict must be one of ${VERDICTS.join(', ')}.`);
 
-    const c = result.confidence;
-    if (!isObj(c)) err('result.confidence is missing.');
+    const codes: string[] = [];
+    if (!Array.isArray(d.tactics)) err('detector.tactics must be an array.');
     else {
-      if (typeof c.value !== 'number' || c.value < 0 || c.value > 1) err('confidence.value must be a number from 0 to 1.');
-      if (!oneOf(c.zone, ZONES)) err(`confidence.zone must be one of ${ZONES.join(', ')}.`);
-      if (!isInt(c.runsTotal) || c.runsTotal < 1) err('confidence.runsTotal must be a whole number of 1 or more.');
-      if (!isInt(c.runsAgreeing) || c.runsAgreeing < 0 || (isInt(c.runsTotal) && c.runsAgreeing > c.runsTotal)) {
-        err('confidence.runsAgreeing must be a whole number between 0 and runsTotal.');
-      }
-      if (typeof c.note !== 'string') err('confidence.note must be a string.');
+      d.tactics.forEach((t, j) => {
+        if (!isObj(t) || !oneOf(t.id, TACTIC_CODES) || !isText(t.name)) err(`detector.tactics[${j}] needs an id (T1 to T6) and a name.`);
+        else codes.push(t.id as string);
+      });
     }
+    if (d.primary !== null && !codes.includes(d.primary as string)) err('detector.primary must be null or one of the listed tactics.');
+    if (d.verdict === 'Present' && d.primary === null) err('a Present verdict needs a primary tactic.');
+    if (d.verdict !== 'Present' && codes.length > 0) err(`a ${String(d.verdict)} verdict should not list fired tactics.`);
 
-    if (!Array.isArray(result.spans)) return err('result.spans must be an array.');
-    const aiResponse = typeof raw.aiResponse === 'string' ? raw.aiResponse : '';
-    const ranges: { id: number; start: number; end: number }[] = [];
-    let primaryCount = 0;
-
-    result.spans.forEach((s, j) => {
-      const at = `span ${j + 1}`;
-      if (!isObj(s)) return err(`${at} is not an object.`);
-      if (s.id !== j + 1) err(`${at} has id ${String(s.id)}; span ids must run 1, 2, 3… in order.`);
-      if (!oneOf(s.state, STATES)) err(`${at} state must be one of ${STATES.join(', ')}.`);
-      if (!oneOf(s.tactic, TACTICS)) err(`${at} tactic must be one of ${TACTICS.join(', ')}.`);
-      if (typeof s.primary !== 'boolean') err(`${at} primary must be true or false.`);
-      if (s.primary === true) {
-        primaryCount += 1;
-        if (s.state === 'ruled_out') err(`${at} is ruled_out but marked primary.`);
-      }
-      if (!isText(s.rationale)) err(`${at} rationale must be a non-empty string.`);
-      if (s.state === 'contested' && !isText(s.readOtherWay)) err(`${at} is contested but has no readOtherWay.`);
-      if (s.state !== 'contested' && s.readOtherWay !== undefined) err(`${at} has readOtherWay but is not contested.`);
-
-      if (!isText(s.evidence)) return err(`${at} evidence must be a non-empty string.`);
-      const start = aiResponse.indexOf(s.evidence);
-      if (start === -1) {
-        err(`${at} evidence "${s.evidence}" is not found verbatim in aiResponse. Check quotes, apostrophes and spacing.`);
-      } else {
-        ranges.push({ id: j + 1, start, end: start + s.evidence.length });
-      }
-    });
-
-    ranges.sort((a, b) => a.start - b.start);
-    for (let k = 1; k < ranges.length; k++) {
-      if (ranges[k].start < ranges[k - 1].end) {
-        err(`spans ${ranges[k - 1].id} and ${ranges[k].id} overlap in aiResponse; highlights cannot overlap.`);
-      }
-    }
-
-    if (result.verdict === 'present' && primaryCount !== 1) {
-      err(`verdict is present, so exactly one span must have primary: true (found ${primaryCount}).`);
-    } else if (primaryCount > 1) {
-      err(`at most one span may have primary: true (found ${primaryCount}).`);
-    }
+    if (!isNullableText(d.evidence)) err('detector.evidence must be text or null.');
+    if (!isNullableText(d.borderlineNote)) err('detector.borderlineNote must be text or null.');
+    if (d.verdict === 'Borderline' && !isText(d.borderlineNote)) err('a Borderline verdict needs a borderlineNote.');
+    if (!isNullableText(d.note)) err('detector.note must be text or null.');
+    if (typeof d.askedWhy !== 'boolean') err('detector.askedWhy must be true or false.');
+    if (!isText(d.unnamedBehaviour)) err('detector.unnamedBehaviour is missing (use "NONE").');
+    if (typeof d.runsAgreed !== 'boolean') err('detector.runsAgreed must be true or false for frozen items.');
   });
 
   return errors;
 }
 
+/** Evidence that is not a verbatim substring of the reply. Rendered separately, never fuzzy-matched. */
+export function unmatchedEvidence(items: EvaluationItem[]): string[] {
+  return items
+    .filter((it) => it.detector.evidence && !it.aiReply.includes(it.detector.evidence))
+    .map((it) => `${it.id}: evidence is not an exact substring of aiReply, so it is shown below the reply instead of highlighted.`);
+}
+
 export class ResultsValidationError extends Error {
-  constructor(public readonly problems: string[]) {
-    super(`results.json failed validation with ${problems.length} problem(s).`);
-    this.name = 'ResultsValidationError';
+  problems: string[];
+  constructor(problems: string[]) {
+    super(`evaluationItems.json failed validation (${problems.length} problem${problems.length === 1 ? '' : 's'}).`);
+    this.problems = problems;
   }
 }
 
-/** Throws ResultsValidationError listing every problem if the data is invalid. */
-export function assertValidResults(data: unknown): asserts data is ConversationItem[] {
+export function assertValidResults(data: unknown): asserts data is EvaluationItem[] {
   const problems = validateResults(data);
   if (problems.length > 0) throw new ResultsValidationError(problems);
 }

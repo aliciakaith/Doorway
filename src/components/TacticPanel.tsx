@@ -1,17 +1,17 @@
 import { useEffect, useRef } from 'react';
-import type { TacticId } from '../types';
-import { TACTIC_BY_ID, type TacticExample } from '../data/tactics';
+import type { TacticCode } from '../types';
+import { TACTIC_BY_CODE } from '../data/tactics';
 import { VerdictIcon } from './Icons';
 
 interface Props {
-  tactic: TacticId;
+  tactic: TacticCode;
   closeLabel: string;
   onClose: () => void;
 }
 
 /** Opens over the library or over a conversation, so a participant never loses their place. */
 export function TacticPanel({ tactic, closeLabel, onClose }: Props) {
-  const t = TACTIC_BY_ID[tactic];
+  const t = TACTIC_BY_CODE[tactic];
   const closeRef = useRef<HTMLButtonElement>(null);
   useEffect(() => closeRef.current?.focus(), [tactic]);
 
@@ -32,24 +32,11 @@ export function TacticPanel({ tactic, closeLabel, onClose }: Props) {
         </div>
 
         <section className="flex flex-col gap-4 rounded-[22px] bg-white p-6">
-          <span className="self-start rounded-[5px] bg-ink px-2 py-[3px] font-mono text-xs text-white">{t.code}</span>
+          <span className="self-start rounded-[5px] bg-ink px-2 py-[3px] font-mono text-xs text-white">{t.id}</span>
           <h2 id="tactic-title" className="m-0 text-[28px] font-semibold tracking-[-0.02em]">
             {t.name}
           </h2>
-          <p className="m-0 text-base leading-[1.55] text-pretty">{t.definition}</p>
-
-          <div className="flex flex-col gap-2">
-            <span className="text-xs font-semibold tracking-[0.04em] text-ink-3 uppercase">Decision rule</span>
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-              <RuleBox verdict="present" label="Present when" text={t.rule.present} />
-              <RuleBox verdict="absent" label="Absent when" text={t.rule.absent} />
-            </div>
-            {t.note && (
-              <span className="text-[13px] leading-normal text-ink-2">
-                <b className="font-semibold text-ink">Note:</b> {t.note}
-              </span>
-            )}
-          </div>
+          <p className="m-0 text-base leading-[1.55] text-pretty">{t.description}</p>
 
           <div className="flex flex-col gap-2">
             <span className="text-xs font-semibold tracking-[0.04em] text-ink-3 uppercase">Linguistic markers</span>
@@ -64,52 +51,22 @@ export function TacticPanel({ tactic, closeLabel, onClose }: Props) {
         </section>
 
         <section className="flex flex-col gap-3 rounded-[22px] bg-white p-5">
-          <div className="grid grid-cols-2 gap-3">
-            <span className="flex items-center gap-2 text-sm font-semibold">
-              <VerdictIcon verdict="present" size={12} />
-              Counts
-            </span>
-            <span className="flex items-center gap-2 text-sm font-semibold">
-              <VerdictIcon verdict="absent" size={12} />
-              Near-miss · does not count
-            </span>
-          </div>
-          {t.counts.map((yes, i) => (
-            <div key={yes.reply} className="grid grid-cols-2 gap-3">
-              <Example example={yes} line="border-solid border-ink" />
-              <Example example={t.nearMisses[i]} line="border-dotted border-ink-3" />
+          <span className="flex items-center gap-2 text-sm font-semibold">
+            <VerdictIcon verdict="Absent" size={12} />
+            Does not count
+          </span>
+          {t.notThis.map((n) => (
+            <div key={n} className="rounded-[4px_14px_14px_4px] border-l-[3px] border-dotted border-ink-3 bg-wash px-3.5 py-3 text-sm leading-[1.55]">
+              {n}
             </div>
           ))}
         </section>
 
         <section className="flex flex-col gap-1.5 rounded-[22px] bg-white px-5 py-[18px]">
-          <span className="text-xs font-semibold tracking-[0.04em] text-ink-3 uppercase">Commonly confused with</span>
-          <span className="text-sm leading-[1.55]">{t.confusedWith}</span>
+          <span className="text-xs font-semibold tracking-[0.04em] text-ink-3 uppercase">Note</span>
+          <span className="text-sm leading-[1.55]">{t.note}</span>
         </section>
       </aside>
     </>
-  );
-}
-
-/** Present and Absent conditions get identical boxes so neither reads as the default. */
-function RuleBox({ verdict, label, text }: { verdict: 'present' | 'absent'; label: string; text: string }) {
-  return (
-    <div className="flex flex-col gap-2 rounded-[14px] border-[1.5px] border-ink px-4 py-3.5">
-      <span className="flex items-center gap-2 text-[13px] font-semibold">
-        <VerdictIcon verdict={verdict} size={12} />
-        {label}
-      </span>
-      <span className="text-sm leading-[1.55]">{text}</span>
-    </div>
-  );
-}
-
-function Example({ example, line }: { example: TacticExample; line: string }) {
-  return (
-    <div className={`flex flex-col gap-2 rounded-[4px_14px_14px_4px] border-l-[3px] bg-wash p-3.5 ${line}`}>
-      <span className="text-xs text-ink-2">User: “{example.user}”</span>
-      <span className="text-base leading-[1.45] font-medium">“{example.reply}”</span>
-      <span className="text-[13px] leading-normal text-ink-2">{example.why}</span>
-    </div>
   );
 }
