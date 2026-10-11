@@ -71,6 +71,7 @@ Evidence that is not an exact substring of `aiReply` is not an error: it is show
 
 1. Import the repository in Vercel. It detects Vite (build command `npm run build`, output `dist`) and the functions in `api/`.
 2. Add the three environment variables above.
+   The functions run in Sydney (`syd1`, set in `vercel.json`), next to the Supabase database, so responses stay in Australia.
 3. Deploy. To update the items, replace `src/data/evaluationItems.json`, commit and push. The build fails (keeping the previous deployment live) if the new data is invalid.
 
 ## Project layout
