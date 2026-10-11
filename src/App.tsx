@@ -7,7 +7,7 @@ import { emptyResponse, type ItemResponse, type Judgement, type ResponseMap } fr
 import { seededShuffle } from './lib/shuffle';
 import { saveResponse, type SaveState } from './lib/saveResponse';
 import { exportResponses } from './lib/exportResponses';
-import { Sidebar } from './components/Sidebar';
+import { LOCKED_IN_SESSION, Sidebar } from './components/Sidebar';
 import { LimitationsPanel } from './components/LimitationsPanel';
 import { TacticPanel } from './components/TacticPanel';
 import { DataError } from './components/DataError';
@@ -49,7 +49,8 @@ export default function App() {
   const reviewIndex = route.screen === 'review' ? Math.min(route.index, order.length - 1) : null;
   const reviewItem = participant && reviewIndex !== null ? order[reviewIndex] : undefined;
   const isExplore = route.screen === 'analyse' || route.screen === 'tactics' || route.screen === 'corpus';
-  // Explore leaves the controlled set, so it stays locked until the participant reaches the end.
+  const isLockedScreen = isExplore && LOCKED_IN_SESSION.includes(route.screen as ExploreScreen);
+  // Analyse and Corpus leave the controlled set, so they stay locked until the participant reaches the end.
   const sessionActive = !!participant && !finished;
   const showStart = changing || (!participant && !isExplore);
 
@@ -69,7 +70,7 @@ export default function App() {
 
   const update = useCallback((itemId: string, change: (r: ItemResponse) => ItemResponse): ItemResponse => {
     const pos = order.findIndex((it) => it.id === itemId);
-    const prev = responsesRef.current[itemId] ?? emptyResponse(itemId, pos + 1);
+    const prev = responsesRef.current[itemId] ?? emptyResponse(itemId, order[pos].pair_id, pos + 1);
     const next = change(prev);
     responsesRef.current = { ...responsesRef.current, [itemId]: next };
     setResponses(responsesRef.current);
@@ -122,11 +123,11 @@ export default function App() {
     if (route.screen === 'done') setFinished(true);
   }, [reviewIndex, route.screen]);
 
-  // No hash, or an Explore URL typed mid-session: send the participant back to where they were.
+  // No hash, or a locked Explore URL typed mid-session: send the participant back to where they were.
   useEffect(() => {
     if (!participant || changing) return;
-    if (route.screen === 'start' || (isExplore && sessionActive)) replace(href.item(lastIndex));
-  }, [participant, changing, route.screen, isExplore, sessionActive, lastIndex]);
+    if (route.screen === 'start' || (isLockedScreen && sessionActive)) replace(href.item(lastIndex));
+  }, [participant, changing, route.screen, isLockedScreen, sessionActive, lastIndex]);
 
   const answered = order.map((item) => !!responses[item.id]?.judgement);
 
@@ -215,7 +216,7 @@ export default function App() {
           navigate(finished ? href.done() : href.item(lastIndex));
         }}
         onExplore={(screen) => {
-          if (sessionActive) return;
+          if (sessionActive && LOCKED_IN_SESSION.includes(screen)) return;
           navigate(href[screen]());
         }}
         onChangeParticipant={() => {

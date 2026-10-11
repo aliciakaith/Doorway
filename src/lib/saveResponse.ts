@@ -15,6 +15,7 @@ export async function saveResponse(participantId: string, r: ItemResponse): Prom
       body: JSON.stringify({
         participantId,
         itemId: r.itemId,
+        pairId: r.pairId,
         shownOrder: r.shownOrder,
         judgement: r.judgement,
         comment: r.comment,

@@ -12,6 +12,7 @@ export function exportResponses(participantId: string, order: EvaluationItem[], 
       return {
         participantId,
         itemId: item.id,
+        pairId: item.pair_id,
         shownOrder: i + 1,
         judgement: r?.judgement ?? null,
         comment: r?.comment ?? '',

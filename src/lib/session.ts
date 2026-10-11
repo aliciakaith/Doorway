@@ -6,6 +6,7 @@ export type Judgement = 'agree' | 'disagree';
 
 export interface ItemResponse {
   itemId: string;
+  pairId: string;                // the item's pair_id, so saved rows can be read without a lookup
   shownOrder: number;            // 1-based position this participant saw it at
   judgement: Judgement | null;
   comment: string;
@@ -14,6 +15,6 @@ export interface ItemResponse {
 
 export type ResponseMap = Record<string, ItemResponse>;
 
-export function emptyResponse(itemId: string, shownOrder: number): ItemResponse {
-  return { itemId, shownOrder, judgement: null, comment: '', timeOnItemSeconds: 0 };
+export function emptyResponse(itemId: string, pairId: string, shownOrder: number): ItemResponse {
+  return { itemId, pairId, shownOrder, judgement: null, comment: '', timeOnItemSeconds: 0 };
 }

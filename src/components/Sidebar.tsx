@@ -9,6 +9,9 @@ interface Props {
   onChangeParticipant: () => void;
 }
 
+/** The Tactic library stays open so participants can check what a category means mid-session. */
+export const LOCKED_IN_SESSION: ExploreScreen[] = ['analyse', 'corpus'];
+
 const EXPLORE: [ExploreScreen, string][] = [
   ['analyse', 'Analyse'],
   ['tactics', 'Tactic library'],
@@ -16,8 +19,8 @@ const EXPLORE: [ExploreScreen, string][] = [
 ];
 
 /**
- * Review is the participant's path. Explore leaves the controlled set, so it is locked
- * while a session is in progress and unlocks once the participant finishes.
+ * Review is the participant's path. Analyse and Corpus leave the controlled set, so they are
+ * locked while a session is in progress and unlock once the participant finishes.
  */
 export function Sidebar({ active, participant, sessionActive, onReview, onExplore, onChangeParticipant }: Props) {
   const reviewActive = active === 'review';
@@ -50,22 +53,22 @@ export function Sidebar({ active, participant, sessionActive, onReview, onExplor
           className={`flex justify-between px-2.5 pb-1.5 text-[11px] font-semibold tracking-[0.06em] uppercase ${sessionActive ? 'text-[#9a9aa0]' : 'text-ink-3'}`}
         >
           Explore
-          {sessionActive && <span className="font-medium tracking-normal normal-case">Locked during session</span>}
         </span>
         {sessionActive && (
-          <span className="px-2.5 pb-1.5 text-xs leading-snug text-ink-3">Explore opens when the review is finished, so the eight conversations come first.</span>
+          <span className="px-2.5 pb-1.5 text-xs leading-snug text-ink-3">Analyse and Corpus open when the review is finished.</span>
         )}
         {EXPLORE.map(([key, label]) => {
-          const on = !sessionActive && active === key;
+          const locked = sessionActive && LOCKED_IN_SESSION.includes(key);
+          const on = !locked && active === key;
           return (
             <button
               key={key}
               onClick={() => onExplore(key)}
-              disabled={sessionActive}
+              disabled={locked}
               aria-current={on ? 'page' : undefined}
-              className={`flex items-center gap-2.5 rounded-xl border-0 px-2.5 py-2.5 text-left text-sm disabled:cursor-default ${on ? 'bg-chip font-semibold text-ink' : 'bg-transparent'} ${sessionActive ? 'text-disabled' : 'text-ink enabled:hover:bg-wash'}`}
+              className={`flex items-center gap-2.5 rounded-xl border-0 px-2.5 py-2.5 text-left text-sm disabled:cursor-default ${on ? 'bg-chip font-semibold text-ink' : 'bg-transparent'} ${locked ? 'text-disabled' : 'text-ink enabled:hover:bg-wash'}`}
             >
-              <span className={`h-2 w-2 rounded-[2px] ${sessionActive ? 'bg-track' : on ? 'bg-ink' : 'bg-line-2'}`} />
+              <span className={`h-2 w-2 rounded-[2px] ${locked ? 'bg-track' : on ? 'bg-ink' : 'bg-line-2'}`} />
               <span className="flex-1">{label}</span>
             </button>
           );

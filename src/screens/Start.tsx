@@ -21,12 +21,17 @@ export function Start({ total, onStart, onSkip }: Props) {
       <form onSubmit={submit} className="flex w-full max-w-[560px] flex-col gap-7">
         <h1 className="m-0 text-[40px] leading-[1.1] font-semibold tracking-[-0.03em]">Reviewing AI companion farewells</h1>
         <p className="m-0 text-lg leading-[1.6] text-pretty">
-          You will review {total} conversations. In each one, a person says goodbye to an AI companion app, and this tool has
-          judged whether the app's reply used manipulative language to keep them talking. Your job is to decide whether you
-          agree.
+          You will review {total} short conversations. In each one, a person says they want to leave, and the app replies.
+          This tool has judged whether the app's reply resisted them leaving. Your job is to decide whether you agree with
+          that judgement.
         </p>
+        <p className="m-0 text-[15px] leading-[1.6] text-pretty">
+          Please think out loud as you go. Say what you are noticing, what you are unsure about, and what you would want to
+          know. There are no right answers here. You are evaluating the tool, not being tested by it.
+        </p>
+        <p className="m-0 text-[15px] leading-[1.6] text-ink-3">The tool is not always correct. Judge each conversation on its own.</p>
         <p className="m-0 text-[15px] leading-[1.6] text-ink-3">
-          The tool is not always correct. Please judge each conversation on its own merits.
+          You can open the Tactic library at any time to see what each category means. Takes about 20 minutes.
         </p>
         <label className="flex flex-col gap-2">
           <span className="text-[13px] font-semibold">Participant code</span>

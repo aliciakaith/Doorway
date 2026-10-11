@@ -63,8 +63,8 @@ Evidence that is not an exact substring of `aiReply` is not an error: it is show
 - **Answers are kept in memory**, not in localStorage or sessionStorage. Each answer is also sent to `/api/responses`, which upserts one row per participant and item in Supabase, so a closed tab does not lose data. A save failure never blocks the participant. A refresh clears the screen; the rows already saved stay in Supabase.
 - **Agree / Disagree is required** before Next. The comment is optional and never blocks.
 - **Time on item** counts while a conversation is on screen and the tab is visible.
-- **Export responses** (Done screen) downloads JSON with, for every item: participant ID, item id, shown order, agree or disagree, comment, and time on item in seconds.
-- **Explore is locked during a session** and unlocks at the Done screen.
+- **Export responses** (Done screen) downloads JSON with, for every item: participant ID, item id, pair id, shown order, agree or disagree, comment, and time on item in seconds. Supabase rows carry the same fields.
+- **Analyse and Corpus are locked during a session** and unlock at the Done screen. The Tactic library stays open, as the start screen tells participants.
 - **Keyboard:** ← and → move between conversations (→ only once answered). Escape closes side panels. No other shortcuts.
 
 ## Deploying to Vercel

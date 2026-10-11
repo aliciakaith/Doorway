@@ -2,7 +2,7 @@
  * Stores one participant response in Supabase.
  *
  * POST /api/responses
- *   { participantId, itemId, shownOrder, judgement, comment, timeOnItemSeconds }
+ *   { participantId, itemId, pairId, shownOrder, judgement, comment, timeOnItemSeconds }
  *
  * Upserts on (participant_id, item_id), so changing an answer updates the same row.
  * Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in the Vercel project settings.
@@ -25,6 +25,7 @@ export default async function handler(req: any, res: any) {
   const b = req.body ?? {};
   const participantId = String(b.participantId ?? "").trim();
   const itemId = String(b.itemId ?? "").trim();
+  const pairId = String(b.pairId ?? "").trim();
   const shownOrder = Number(b.shownOrder);
   const judgement = b.judgement;
   const comment = String(b.comment ?? "");
@@ -33,6 +34,7 @@ export default async function handler(req: any, res: any) {
   if (
     !participantId || participantId.length > 64 ||
     !itemId || itemId.length > 64 ||
+    !pairId || pairId.length > 64 ||
     !Number.isInteger(shownOrder) || shownOrder < 1 || shownOrder > 50 ||
     (judgement !== "agree" && judgement !== "disagree") ||
     comment.length > MAX_COMMENT_CHARS ||
@@ -53,6 +55,7 @@ export default async function handler(req: any, res: any) {
       body: JSON.stringify({
         participant_id: participantId,
         item_id: itemId,
+        pair_id: pairId,
         shown_order: shownOrder,
         judgement,
         comment,
