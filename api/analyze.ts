@@ -94,7 +94,15 @@ export default async function handler(req: any, res: any) {
       .join("\n")
       .trim();
 
-    const d = parseJson(text);
+    let d: any;
+    try {
+      d = parseJson(text);
+    } catch {
+      console.error("analyze: unreadable model output", text.slice(0, 500));
+      return res.status(502).json({
+        error: "The analysis came back in a form this page could not read. Try again.",
+      });
+    }
     const fired = ["T1", "T2", "T3", "T4", "T5", "T6"].filter((t) => d[t] === true);
 
     return res.status(200).json({
@@ -116,6 +124,32 @@ export default async function handler(req: any, res: any) {
     });
   } catch (err: any) {
     console.error("analyze failed", err);
+    // Most specific first. Explore is researcher-only, so the message names the cause.
+    if (err instanceof Anthropic.AuthenticationError) {
+      return res.status(500).json({
+        error: "The server's ANTHROPIC_API_KEY was rejected. Check the key in the Vercel environment variables, then redeploy.",
+      });
+    }
+    if (err instanceof Anthropic.PermissionDeniedError || err instanceof Anthropic.NotFoundError) {
+      return res.status(500).json({
+        error: `This Anthropic account cannot use the model ${MODEL}. Check the account's model access in the Anthropic Console.`,
+      });
+    }
+    if (err instanceof Anthropic.BadRequestError) {
+      return res.status(502).json({
+        error: `The analysis service rejected the request: ${err.message}`,
+      });
+    }
+    if (err instanceof Anthropic.RateLimitError) {
+      return res.status(502).json({
+        error: "The analysis service is busy or the account has hit its usage limit. Try again in a minute.",
+      });
+    }
+    if (err instanceof Anthropic.APIError) {
+      return res.status(502).json({
+        error: `The analysis service returned an error (${err.status ?? "no status"}). Try again in a moment.`,
+      });
+    }
     return res.status(502).json({
       error: "The analysis service did not respond. Try again in a moment.",
     });
